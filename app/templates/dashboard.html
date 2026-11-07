@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | LUM TEK{% endblock %}
+
+{% block content %}
+
+<div class="topbar">
+    <div>
+        <h1>Admin Dashboard</h1>
+        <p class="muted">Welcome, {{ current_user.name }}</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="logout-button" type="submit">Logout</button>
+    </form>
+</div>
+
+<div class="grid">
+
+    <div class="card">
+        <p class="muted">Total Projects</p>
+        <div class="stat-number">{{ stats.projects }}</div>
+    </div>
+
+    <div class="card">
+        <p class="muted">Services</p>
+        <div class="stat-number">{{ stats.services }}</div>
+    </div>
+
+    <div class="card">
+        <p class="muted">Testimonials</p>
+        <div class="stat-number">{{ stats.testimonials }}</div>
+    </div>
+
+    <div class="card">
+        <p class="muted">Pending Testimonials</p>
+        <div class="stat-number">{{ stats.pending_testimonials }}</div>
+    </div>
+
+    <div class="card">
+        <p class="muted">Total Enquiries</p>
+        <div class="stat-number">{{ stats.leads }}</div>
+    </div>
+
+    <div class="card">
+        <p class="muted">New Enquiries</p>
+        <div class="stat-number">{{ stats.new_leads }}</div>
+    </div>
+
+    <div class="card">
+        <p class="muted">Media Files</p>
+        <div class="stat-number">{{ stats.media }}</div>
+    </div>
+
+    <div class="card">
+        <p class="muted">Contact Messages</p>
+        <div class="stat-number">{{ stats.messages }}</div>
+    </div>
+
+    <div class="card">
+        <p class="muted">Admin Users</p>
+        <div class="stat-number">{{ stats.users }}</div>
+    </div>
+
+</div>
+
+{% endblock %}

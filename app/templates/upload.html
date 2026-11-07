@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Library | LUM TEK Admin</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f5f9;
+            color: #202938;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 245px;
+            flex-shrink: 0;
+            background: #142033;
+            color: white;
+            padding: 25px 16px;
+        }
+
+        .brand {
+            font-size: 25px;
+            font-weight: bold;
+            margin: 0 10px 35px;
+        }
+
+        .brand span { color: #f59e0b; }
+
+        .sidebar a {
+            display: block;
+            color: #dbe4f0;
+            text-decoration: none;
+            padding: 13px 14px;
+            margin: 5px 0;
+            border-radius: 7px;
+        }
+
+        .sidebar a:hover,
+        .sidebar a.active {
+            background: #263850;
+            color: white;
+        }
+
+        main {
+            flex: 1;
+            min-width: 0;
+            padding: 35px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        h1 { margin: 0 0 8px; }
+
+        .muted { color: #718096; }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 22px;
+            box-shadow: 0 3px 15px rgba(0,0,0,.05);
+        }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            background: #fafcff;
+        }
+
+        .upload-area.dragover {
+            border-color: #f59e0b;
+            background: #fff8e8;
+        }
+
+        .upload-icon {
+            font-size: 42px;
+            margin-bottom: 12px;
+        }
+
+        input[type="file"] { display: none; }
+
+        .button {
+            display: inline-block;
+            background: #f59e0b;
+            color: #142033;
+            border: 0;
+            border-radius: 7px;
+            padding: 12px 20px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .button:hover { background: #e59406; }
+
+        .preview {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .preview img {
+            max-width: 220px;
+            max-height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .file-name {
+            margin: 10px 0;
+            color: #475569;
+            overflow-wrap: anywhere;
+        }
+
+        .media-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 18px;
+        }
+
+        .media-item {
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .media-item img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .media-info {
+            padding: 12px;
+            overflow-wrap: anywhere;
+            font-size: 13px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 7px;
+            margin-bottom: 15px;
+            background: #eff6ff;
+            color: #1e40af;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        @media(max-width: 750px) {
+            .layout { display: block; }
+            .sidebar { width: 100%; }
+            main { padding: 18px; }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+        <div class="brand">LUM <span>TEK</span></div>
+
+        <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('admin.projects') }}">Projects</a>
+        <a href="{{ url_for('admin.services') }}">Services</a>
+        <a href="{{ url_for('admin.testimonials') }}">Testimonials</a>
+        <a href="{{ url_for('admin.leads') }}">Quote Requests</a>
+        <a href="{{ url_for('admin.progress') }}">Project Tracker</a>
+        <a class="active" href="{{ url_for('admin.upload_media') }}">Media Library</a>
+        <a href="{{ url_for('admin.contacts') }}">Contact Hub</a>
+        <a href="{{ url_for('admin.seo_settings') }}">SEO Settings</a>
+        <a href="{{ url_for('admin.backups') }}">Backups</a>
+
+        {% if current_user.role == "admin" %}
+        <a href="{{ url_for('admin.users') }}">User Management</a>
+        {% endif %}
+    </aside>
+
+    <main>
+
+        <div class="topbar">
+            <div>
+                <h1>Media Library</h1>
+                <p class="muted">Upload and manage LUM TEK website images.</p>
+            </div>
+
+            <a class="button" href="{{ url_for('admin.dashboard') }}">
+                Dashboard
+            </a>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="message {{ 'error' if category == 'error' else '' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+        <section class="card">
+            <h2>Upload New Media</h2>
+            <p class="muted">
+                Select construction photographs, project images or other website media.
+            </p>
+
+            <form
+                method="POST"
+                action="{{ url_for('admin.upload_media') }}"
+                enctype="multipart/form-data"
+            >
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <label class="upload-area" id="uploadArea" for="mediaFile">
+                    <div class="upload-icon">📁</div>
+                    <h3>Drag and drop your image here</h3>
+                    <p class="muted">Or click to browse your computer</p>
+                    <span class="button">Choose Files</span>
+                    <p class="muted">Allowed: JPG, JPEG, PNG, WEBP</p>
+                </label>
+
+                <input
+                    type="file"
+                    id="mediaFile"
+                    name="file"
+                    accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                    required
+                >
+
+                <div class="preview" id="preview">
+                    <img id="previewImage" alt="Selected image preview">
+                    <p class="file-name" id="fileName"></p>
+                </div>
+
+                <br>
+                <button type="submit" class="button">
+                    Upload Media
+                </button>
+            </form>
+        </section>
+
+        <section class="card">
+            <h2>Uploaded Images</h2>
+
+            {% if media_items %}
+            <div class="media-grid">
+                {% for item in media_items %}
+                <div class="media-item">
+                    <img
+                        src="{{ url_for('admin.media_file', filename=item.filename) }}"
+                        alt="{{ item.original_name or item.filename }}"
+                        loading="lazy"
+                    >
+                    <div class="media-info">
+                        <strong>{{ item.original_name or item.filename }}</strong>
+                        <p class="muted">{{ item.file_type or 'Image' }}</p>
+                        <p class="muted">
+                            {{ item.uploaded_at.strftime('%d-%m-%Y') if item.uploaded_at else '' }}
+                        </p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="muted">No uploaded images found yet.</p>
+            {% endif %}
+        </section>
+
+    </main>
+</div>
+
+<script>
+    const fileInput = document.getElementById("mediaFile");
+    const uploadArea = document.getElementById("uploadArea");
+    const preview = document.getElementById("preview");
+    const previewImage = document.getElementById("previewImage");
+    const fileName = document.getElementById("fileName");
+
+    function showPreview(file) {
+        if (!file) return;
+
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        if (!allowedTypes.includes(file.type)) {
+            alert("Please select a JPG, PNG or WEBP image.");
+            fileInput.value = "";
+            preview.style.display = "none";
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function(event) {
+            previewImage.src = event.target.result;
+            fileName.textContent = file.name;
+            preview.style.display = "block";
+        };
+
+        reader.readAsDataURL(file);
+    }
+
+    fileInput.addEventListener("change", function() {
+        showPreview(this.files[0]);
+    });
+
+    uploadArea.addEventListener("dragover", function(event) {
+        event.preventDefault();
+        uploadArea.classList.add("dragover");
+    });
+
+    uploadArea.addEventListener("dragleave", function() {
+        uploadArea.classList.remove("dragover");
+    });
+
+    uploadArea.addEventListener("drop", function(event) {
+        event.preventDefault();
+        uploadArea.classList.remove("dragover");
+
+        if (event.dataTransfer.files.length) {
+            fileInput.files = event.dataTransfer.files;
+            showPreview(fileInput.files[0]);
+        }
+    });
+</script>
+
+</body>
+</html>
