@@ -1,0 +1,740 @@
+{% extends "base.html" %}
+
+{% block title %}User Management | LUM TEK{% endblock %}
+
+{% block content %}
+
+{% set department_names = departments.keys() if departments is mapping else departments %}
+
+<style>
+.users-wrap {
+    max-width: 1280px;
+    margin: 26px auto;
+    padding: 0 18px;
+    color: #1e293b;
+}
+
+.users-card {
+    background: #fff;
+    padding: 24px;
+    border-radius: 13px;
+    margin-bottom: 22px;
+    box-shadow: 0 3px 16px rgba(15,23,42,.06);
+}
+
+.users-card h2 {
+    font-size: 20px;
+    margin: 0 0 18px;
+}
+
+.users-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.field label {
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.field input,
+.field select,
+.filter-row input,
+.filter-row select {
+    padding: 11px 12px;
+    border: 1px solid #dbe1ea;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.full {
+    grid-column: 1 / -1;
+}
+
+.help {
+    color: #64748b;
+    font-size: 12px;
+    margin: 0;
+}
+
+.permission-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 12px;
+}
+
+.permission-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 13px;
+    background: #fafbfc;
+}
+
+.permission-card strong {
+    display: block;
+    margin-bottom: 9px;
+    text-transform: capitalize;
+}
+
+.permission-card label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    margin: 7px 0;
+}
+
+.permission-card input {
+    width: auto;
+}
+
+.primary-btn,
+.secondary-btn {
+    display: inline-block;
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 16px;
+    font-weight: 650;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.primary-btn {
+    background: #155eef;
+    color: #fff;
+}
+
+.secondary-btn {
+    background: #eef2f7;
+    color: #334155;
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 900px;
+}
+
+.users-table th,
+.users-table td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #edf0f4;
+    font-size: 13px;
+}
+
+.users-table th {
+    background: #f8fafc;
+}
+
+.pill {
+    display: inline-block;
+    padding: 4px 9px;
+    border-radius: 20px;
+    background: #eaf1ff;
+    color: #155eef;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.active {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.inactive {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.flash {
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.flash.success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.flash.error,
+.flash.danger {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.permission-tools {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+}
+
+.permission-tools button {
+    border: 0;
+    border-radius: 7px;
+    padding: 8px 12px;
+    cursor: pointer;
+    background: #eef2f7;
+    color: #334155;
+}
+
+.permission-summary {
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-top: 12px;
+    color: #475569;
+    font-size: 13px;
+}
+
+@media(max-width:700px) {
+    .users-grid,
+    .filter-row {
+        grid-template-columns: 1fr;
+    }
+
+    .full {
+        grid-column: auto;
+    }
+
+    .users-card {
+        padding: 16px;
+    }
+}
+</style>
+
+
+<div class="users-wrap">
+
+    <header style="margin-bottom:22px">
+        <h1 style="margin:0 0 6px">User Management</h1>
+
+        <p style="margin:0;color:#64748b">
+            Create employee accounts and manage LUM TEK access.
+        </p>
+    </header>
+
+
+    <!-- FLASH MESSAGES -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endwith %}
+
+
+    <!-- CREATE EMPLOYEE -->
+
+    <section class="users-card">
+
+        <h2>Create Employee Account</h2>
+
+        <form
+            method="POST"
+            action="{{ url_for('admin.create_user') }}"
+            id="createUserForm"
+            class="users-grid"
+        >
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+
+            <div class="field">
+                <label for="name">Employee Name *</label>
+
+                <input
+                    id="name"
+                    name="name"
+                    maxlength="120"
+                    required
+                    placeholder="Enter employee name"
+                >
+            </div>
+
+
+            <div class="field">
+                <label for="email">Email Address *</label>
+
+                <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    maxlength="150"
+                    required
+                    placeholder="name@example.com"
+                >
+            </div>
+
+
+            <div class="field">
+                <label for="password">Temporary Password *</label>
+
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    minlength="12"
+                    autocomplete="new-password"
+                    required
+                    placeholder="At least 12 characters"
+                >
+            </div>
+
+
+            <div class="field">
+                <label for="role">Access Level *</label>
+
+                <select id="role" name="role" required>
+                    <option value="staff" selected>Staff</option>
+                    <option value="admin">Admin</option>
+                </select>
+
+                <p class="help">
+                    Super Admin can create Staff and Admin accounts.
+                </p>
+            </div>
+
+
+            <div class="field">
+                <label for="department">Department *</label>
+
+                <select
+                    id="department"
+                    name="department"
+                    required
+                >
+                    <option value="">Select department</option>
+
+                    {% for department in department_names %}
+                        <option value="{{ department }}">
+                            {{ department }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+
+            <div class="field">
+                <label for="job_title">Job Title *</label>
+
+                <select
+                    id="job_title"
+                    name="job_title"
+                    required
+                    disabled
+                >
+                    <option value="">Select department first</option>
+                </select>
+            </div>
+
+
+            <!-- PERMISSION SECTION -->
+
+            <div class="full">
+
+                <hr style="border:0;border-top:1px solid #e2e8f0;margin:12px 0">
+
+                <h3 style="margin-bottom:5px">
+                    Module Permissions
+                </h3>
+
+                <p class="help">
+                    Select which sections the employee can access
+                    and what actions they can perform.
+                </p>
+
+                <div class="permission-tools">
+
+                    <button type="button" id="selectAllView">
+                        Select All View
+                    </button>
+
+                    <button type="button" id="selectAllActions">
+                        Select All Actions
+                    </button>
+
+                    <button type="button" id="clearPermissions">
+                        Clear All Permissions
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- PERMISSION CARDS -->
+
+            <div
+                class="full permission-grid"
+                id="permissionGrid"
+            >
+
+                {% for module in modules %}
+
+                    <div
+                        class="permission-card"
+                        data-module="{{ module }}"
+                    >
+
+                        <strong>
+                            {{ module.replace("_", " ").title() }}
+                        </strong>
+
+                        {% for action in actions %}
+
+                            <label>
+
+                                <input
+                                    type="checkbox"
+                                    name="permissions_{{ module }}"
+                                    value="{{ action }}"
+                                    data-action="{{ action }}"
+                                >
+
+                                {{ action.title() }}
+
+                            </label>
+
+                        {% endfor %}
+
+                    </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <div class="full">
+
+                <div class="permission-summary">
+                    <strong>Restricted modules:</strong>
+                    Backups and User Management are reserved for Super Admin.
+                </div>
+
+            </div>
+
+
+            <div class="full">
+
+                <button class="primary-btn" type="submit">
+                    Create Employee Account
+                </button>
+
+            </div>
+
+        </form>
+
+    </section>
+
+
+    <!-- EXISTING ACCOUNTS -->
+
+    <section class="users-card">
+
+        <h2>Existing Accounts</h2>
+
+        <div class="filter-row">
+
+            <input
+                id="userSearch"
+                placeholder="Search name or email"
+            >
+
+            <select id="departmentFilter">
+
+                <option value="">All Departments</option>
+
+                {% for department in department_names %}
+                    <option value="{{ department|lower }}">
+                        {{ department }}
+                    </option>
+                {% endfor %}
+
+            </select>
+
+            <select id="statusFilter">
+                <option value="">All Statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+
+        </div>
+
+
+        <div class="table-wrap">
+
+            <table class="users-table" id="usersTable">
+
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Access</th>
+                        <th>Department</th>
+                        <th>Job Title</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+
+
+                <tbody>
+
+                    {% for user in users %}
+
+                        <tr
+                            data-search="{{ (user.name ~ ' ' ~ user.email)|lower }}"
+                            data-department="{{ (user.department or '')|lower }}"
+                            data-status="{{ 'active' if user.is_active else 'inactive' }}"
+                        >
+
+                            <td>{{ user.id }}</td>
+
+                            <td>{{ user.name }}</td>
+
+                            <td>{{ user.email }}</td>
+
+                            <td>
+                                <span class="pill">
+                                    {{ user.role.replace("_", " ").title() }}
+                                </span>
+                            </td>
+
+                            <td>{{ user.department or "-" }}</td>
+
+                            <td>{{ user.job_title or "-" }}</td>
+
+                            <td>
+                                <span class="pill {{ 'active' if user.is_active else 'inactive' }}">
+                                    {{ "Active" if user.is_active else "Inactive" }}
+                                </span>
+                            </td>
+
+                            <td style="white-space:nowrap">
+
+                                {% if user.role != "super_admin" %}
+
+                                    <a
+                                        class="secondary-btn"
+                                        href="{{ url_for('admin.edit_user', user_id=user.id) }}"
+                                    >
+                                        Edit
+                                    </a>
+
+                                    {% if user.id != current_user.id %}
+
+                                        <form
+                                            method="POST"
+                                            style="display:inline"
+                                            action="{{ url_for('admin.toggle_user_status', user_id=user.id) }}"
+                                        >
+
+                                            <input
+                                                type="hidden"
+                                                name="csrf_token"
+                                                value="{{ csrf_token() }}"
+                                            >
+
+                                            <button
+                                                class="secondary-btn"
+                                                type="submit"
+                                            >
+                                                {{ "Deactivate" if user.is_active else "Activate" }}
+                                            </button>
+
+                                        </form>
+
+                                    {% endif %}
+
+                                {% else %}
+
+                                    <span class="help">
+                                        Protected account
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+                            <td colspan="8" style="text-align:center;color:#64748b">
+                                No accounts found.
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<script>
+
+// Department and job title data from Flask.
+const departmentData = {{ (departments if departments is mapping else {})|tojson }};
+
+const departmentSelect = document.getElementById("department");
+const jobSelect = document.getElementById("job_title");
+
+
+// Load job titles when department changes.
+function loadJobTitles() {
+
+    const jobs = departmentData[departmentSelect.value] || [];
+
+    jobSelect.innerHTML =
+        '<option value="">Select job title</option>';
+
+    jobs.forEach(job => {
+
+        const option = document.createElement("option");
+
+        option.value = job;
+        option.textContent = job;
+
+        jobSelect.appendChild(option);
+
+    });
+
+    jobSelect.disabled = jobs.length === 0;
+
+    if (jobs.length === 0) {
+
+        jobSelect.innerHTML =
+            '<option value="">No job titles configured</option>';
+
+    }
+}
+
+departmentSelect.addEventListener("change", loadJobTitles);
+
+
+// Permission controls.
+function clearPermissions() {
+
+    document.querySelectorAll(
+        '#permissionGrid input[type="checkbox"]'
+    ).forEach(box => {
+
+        box.checked = false;
+
+    });
+
+}
+
+
+document.getElementById("clearPermissions")
+    .addEventListener("click", clearPermissions);
+
+
+// Select View permission for all modules.
+document.getElementById("selectAllView")
+    .addEventListener("click", () => {
+
+        document.querySelectorAll(
+            '#permissionGrid input[data-action="view"]'
+        ).forEach(box => {
+
+            box.checked = true;
+
+        });
+
+    });
+
+
+// Select all available actions.
+document.getElementById("selectAllActions")
+    .addEventListener("click", () => {
+
+        document.querySelectorAll(
+            '#permissionGrid input[type="checkbox"]'
+        ).forEach(box => {
+
+            box.checked = true;
+
+        });
+
+    });
+
+
+// Search and filter existing users.
+function filterUsers() {
+
+    const query =
+        document.getElementById("userSearch").value.toLowerCase();
+
+    const department =
+        document.getElementById("departmentFilter").value;
+
+    const status =
+        document.getElementById("statusFilter").value;
+
+    document.querySelectorAll(
+        "#usersTable tbody tr[data-search]"
+    ).forEach(row => {
+
+        const matches =
+            row.dataset.search.includes(query) &&
+            (!department || row.dataset.department === department) &&
+            (!status || row.dataset.status === status);
+
+        row.style.display = matches ? "" : "none";
+
+    });
+
+}
+
+
+["userSearch", "departmentFilter", "statusFilter"].forEach(id => {
+
+    document.getElementById(id).addEventListener("input", filterUsers);
+
+    document.getElementById(id).addEventListener("change", filterUsers);
+
+});
+
+</script>
+
+{% endblock %}

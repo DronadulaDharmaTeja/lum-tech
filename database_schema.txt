@@ -1,0 +1,181 @@
+﻿
+============================================================
+TABLE: admin_users
+============================================================
+id | INTEGER | Nullable: False
+username | VARCHAR(100) COLLATE utf8mb4_unicode_ci | Nullable: False
+email | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+password_hash | VARCHAR(255) COLLATE utf8mb4_unicode_ci | Nullable: False
+created_at | TIMESTAMP | Nullable: True
+
+============================================================
+TABLE: backup_records
+============================================================
+id | INTEGER | Nullable: False
+filename | VARCHAR(255) COLLATE utf8mb4_unicode_ci | Nullable: False
+created_at | DATETIME | Nullable: True
+
+============================================================
+TABLE: career_applications
+============================================================
+id | INTEGER | Nullable: False
+full_name | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+email | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+phone | VARCHAR(30) COLLATE utf8mb4_unicode_ci | Nullable: True
+position | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: True
+resume_url | VARCHAR(500) COLLATE utf8mb4_unicode_ci | Nullable: True
+cover_letter | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+status | VARCHAR(50) COLLATE utf8mb4_unicode_ci | Nullable: True
+created_at | TIMESTAMP | Nullable: True
+
+============================================================
+TABLE: contact_messages
+============================================================
+id | INTEGER | Nullable: False
+name | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+email | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: True
+phone | VARCHAR(40) COLLATE utf8mb4_unicode_ci | Nullable: True
+subject | VARCHAR(200) COLLATE utf8mb4_unicode_ci | Nullable: True
+message | TEXT COLLATE utf8mb4_unicode_ci | Nullable: False
+category | VARCHAR(50) COLLATE utf8mb4_unicode_ci | Nullable: True
+status | VARCHAR(30) COLLATE utf8mb4_unicode_ci | Nullable: True
+created_at | DATETIME | Nullable: True
+
+============================================================
+TABLE: customers
+============================================================
+id | INTEGER | Nullable: False
+full_name | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+email | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: True
+phone | VARCHAR(40) COLLATE utf8mb4_unicode_ci | Nullable: True
+company | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: True
+address | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+notes | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+status | VARCHAR(30) COLLATE utf8mb4_unicode_ci | Nullable: True
+created_at | DATETIME | Nullable: True
+updated_at | DATETIME | Nullable: True
+
+============================================================
+TABLE: enquiries
+============================================================
+id | INTEGER | Nullable: False
+full_name | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+email | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+phone | VARCHAR(30) COLLATE utf8mb4_unicode_ci | Nullable: True
+service | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: True
+message | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+status | VARCHAR(50) COLLATE utf8mb4_unicode_ci | Nullable: True
+created_at | TIMESTAMP | Nullable: True
+
+============================================================
+TABLE: extraction_jobs
+============================================================
+id | INTEGER | Nullable: False
+filename | VARCHAR(255) COLLATE utf8mb4_unicode_ci | Nullable: False
+stored_filename | VARCHAR(255) COLLATE utf8mb4_unicode_ci | Nullable: False
+file_type | VARCHAR(50) COLLATE utf8mb4_unicode_ci | Nullable: False
+source_type | VARCHAR(30) COLLATE utf8mb4_unicode_ci | Nullable: False
+status | VARCHAR(30) COLLATE utf8mb4_unicode_ci | Nullable: False
+extracted_text | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+error_message | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+uploaded_by | INTEGER | Nullable: True
+created_at | DATETIME | Nullable: False
+
+============================================================
+TABLE: extraction_records
+============================================================
+id | INTEGER | Nullable: False
+job_id | INTEGER | Nullable: False
+extracted_data | JSON | Nullable: False
+review_status | VARCHAR(30) COLLATE utf8mb4_unicode_ci | Nullable: False
+reviewed_by | INTEGER | Nullable: True
+reviewed_at | DATETIME | Nullable: True
+created_at | DATETIME | Nullable: False
+
+============================================================
+TABLE: leads
+============================================================
+id | INTEGER | Nullable: False
+name | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+email | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: True
+phone | VARCHAR(40) COLLATE utf8mb4_unicode_ci | Nullable: True
+service | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: True
+message | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+status | VARCHAR(30) COLLATE utf8mb4_unicode_ci | Nullable: True
+created_at | DATETIME | Nullable: True
+
+============================================================
+TABLE: media
+============================================================
+id | INTEGER | Nullable: False
+filename | VARCHAR(255) COLLATE utf8mb4_unicode_ci | Nullable: False
+original_name | VARCHAR(255) COLLATE utf8mb4_unicode_ci | Nullable: True
+file_type | VARCHAR(80) COLLATE utf8mb4_unicode_ci | Nullable: True
+uploaded_at | DATETIME | Nullable: True
+
+============================================================
+TABLE: progress_updates
+============================================================
+id | INTEGER | Nullable: False
+project_id | INTEGER | Nullable: False
+title | VARCHAR(200) COLLATE utf8mb4_unicode_ci | Nullable: False
+description | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+image | VARCHAR(255) COLLATE utf8mb4_unicode_ci | Nullable: True
+created_at | DATETIME | Nullable: True
+
+============================================================
+TABLE: projects
+============================================================
+id | INTEGER | Nullable: False
+title | VARCHAR(200) COLLATE utf8mb4_unicode_ci | Nullable: False
+description | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+location | VARCHAR(200) COLLATE utf8mb4_unicode_ci | Nullable: True
+status | VARCHAR(50) COLLATE utf8mb4_unicode_ci | Nullable: True
+image_url | VARCHAR(500) COLLATE utf8mb4_unicode_ci | Nullable: True
+created_at | TIMESTAMP | Nullable: True
+category | VARCHAR(100) COLLATE utf8mb4_unicode_ci | Nullable: True
+image | VARCHAR(255) COLLATE utf8mb4_unicode_ci | Nullable: True
+
+============================================================
+TABLE: seo_settings
+============================================================
+id | INTEGER | Nullable: False
+page | VARCHAR(100) COLLATE utf8mb4_unicode_ci | Nullable: False
+meta_title | VARCHAR(255) COLLATE utf8mb4_unicode_ci | Nullable: True
+meta_description | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+keywords | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+
+============================================================
+TABLE: services
+============================================================
+id | INTEGER | Nullable: False
+title | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+description | TEXT COLLATE utf8mb4_unicode_ci | Nullable: True
+image | VARCHAR(500) COLLATE utf8mb4_unicode_ci | Nullable: True
+created_at | TIMESTAMP | Nullable: True
+is_published | TINYINT | Nullable: False
+
+============================================================
+TABLE: testimonials
+============================================================
+id | INTEGER | Nullable: False
+customer_name | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+review | TEXT COLLATE utf8mb4_unicode_ci | Nullable: False
+rating | INTEGER | Nullable: True
+is_approved | TINYINT | Nullable: True
+is_featured | TINYINT | Nullable: True
+created_at | DATETIME | Nullable: True
+
+============================================================
+TABLE: users
+============================================================
+id | INTEGER | Nullable: False
+name | VARCHAR(120) COLLATE utf8mb4_unicode_ci | Nullable: False
+email | VARCHAR(150) COLLATE utf8mb4_unicode_ci | Nullable: False
+password_hash | VARCHAR(255) COLLATE utf8mb4_unicode_ci | Nullable: False
+role | VARCHAR(30) COLLATE utf8mb4_unicode_ci | Nullable: False
+is_active | TINYINT | Nullable: False
+created_at | DATETIME | Nullable: True
+department | VARCHAR(80) COLLATE utf8mb4_unicode_ci | Nullable: True
+permissions | JSON | Nullable: True
+job_title | VARCHAR(100) COLLATE utf8mb4_unicode_ci | Nullable: True

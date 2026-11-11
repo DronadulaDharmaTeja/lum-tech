@@ -1,0 +1,584 @@
+﻿
+from functools import wraps
+
+from flask import (
+    Blueprint,
+    abort,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    flash,
+)
+
+from flask_login import login_required, current_user
+
+from .extensions import db
+from .models import (
+    User,
+    Project,
+    Service,
+    Testimonial,
+    Lead,
+    Media,
+    ContactMessage,
+    SEOSetting,
+)
+
+admin = Blueprint("admin", __name__, url_prefix="/admin")
+
+
+# =========================================================
+# DEPARTMENTS AND PERMISSIONS
+# =========================================================
+
+DEPARTMENTS = [
+    "Project Management",
+    "Construction & Site Operations",
+    "Engineering & Technical",
+    "CCTV & Security Systems",
+    "Electrical & Networking",
+    "Sales & Business Development",
+    "Client Relations",
+    "Procurement & Inventory",
+    "Finance & Accounts",
+    "HR & Recruitment",
+    "Marketing & SEO",
+    "IT & Systems",
+    "Quality & Safety",
+    "Media & Content",
+]
+
+MODULES = [
+    "dashboard",
+    "projects",
+    "services",
+    "testimonials",
+    "leads",
+    "project_tracker",
+    "media",
+    "contacts",
+    "seo",
+    "backups",
+    "users",
+]
+
+ACTIONS = ["view", "create", "edit", "delete"]
+
+ADMIN_DELEGABLE_MODULES = [
+    "dashboard",
+    "projects",
+    "services",
+    "testimonials",
+    "leads",
+    "project_tracker",
+    "media",
+    "contacts",
+    "seo",
+]
+
+ADMIN_DEFAULT_PERMISSIONS = {
+    module: ["view"]
+    for module in ADMIN_DELEGABLE_MODULES
+}
+
+
+# =========================================================
+# PERMISSION FUNCTIONS
+# =========================================================
+
+def effective_permissions(user):
+    if not user or not user.is_authenticated:
+        return {}
+
+    if getattr(user, "role", None) == "super_admin":
+        return {
+            module: ACTIONS.copy()
+            for module in MODULES
+        }
+
+    permissions = getattr(user, "permissions", None)
+
+    if not permissions:
+        if getattr(user, "role", None) == "admin":
+            return {
+                module: actions.copy()
+                for module, actions in ADMIN_DEFAULT_PERMISSIONS.items()
+            }
+        return {}
+
+    if isinstance(permissions, str):
+        import json
+        try:
+            permissions = json.loads(permissions)
+        except (ValueError, TypeError):
+            return {}
+
+    return permissions if isinstance(permissions, dict) else {}
+
+
+def can_access(user, module, action="view"):
+    if not user or not user.is_authenticated:
+        return False
+
+    if getattr(user, "role", None) == "super_admin":
+        return True
+
+    permissions = effective_permissions(user)
+
+    return action in permissions.get(module, [])
+
+
+def permission_required(module, action="view"):
+    def decorator(view_function):
+
+        @wraps(view_function)
+        @login_required
+        def wrapped_view(*args, **kwargs):
+
+            if not can_access(current_user, module, action):
+                abort(403)
+
+            return view_function(*args, **kwargs)
+
+        return wrapped_view
+
+    return decorator
+
+
+def user_management_required(view_function):
+    @wraps(view_function)
+    @login_required
+    def wrapped_view(*args, **kwargs):
+
+        if getattr(current_user, "role", None) != "super_admin":
+            abort(403)
+
+        return view_function(*args, **kwargs)
+
+    return wrapped_view
+
+
+# =========================================================
+# HELPER FUNCTIONS
+# =========================================================
+
+def module_page(title, description, template="module.html"):
+    return render_template(
+        template,
+        title=title,
+        description=description,
+    )
+
+
+def read_permissions_from_form():
+    permissions = {}
+
+    for module in ADMIN_DELEGABLE_MODULES:
+        selected = request.form.getlist(module)
+
+        valid_actions = [
+            action for action in selected
+            if action in ACTIONS
+        ]
+
+        if valid_actions:
+            permissions[module] = valid_actions
+
+    return permissions
+
+
+def valid_department_and_job(department, job_title):
+    return (
+        department in DEPARTMENTS
+        and isinstance(job_title, str)
+        and len(job_title.strip()) > 0
+    )
+
+
+# =========================================================
+# ADMIN DASHBOARD
+# =========================================================
+
+@admin.route("/")
+@admin.route("/dashboard")
+@permission_required("dashboard", "view")
+def dashboard():
+
+    stats = {
+        "users": User.query.count(),
+        "projects": Project.query.count(),
+        "services": Service.query.count(),
+        "testimonials": Testimonial.query.count(),
+        "leads": Lead.query.count(),
+        "media": Media.query.count(),
+        "messages": ContactMessage.query.count(),
+    }
+
+    return render_template(
+        "dashboard.html",
+        stats=stats,
+        users_count=stats["users"],
+        projects_count=stats["projects"],
+        services_count=stats["services"],
+        testimonials_count=stats["testimonials"],
+        leads_count=stats["leads"],
+        media_count=stats["media"],
+        messages_count=stats["messages"],
+    )
+
+
+# =========================================================
+# PROJECTS
+# =========================================================
+
+@admin.route("/projects")
+@permission_required("projects", "view")
+def projects():
+
+    records = Project.query.order_by(
+        Project.id.desc()
+    ).all()
+
+    return render_template(
+        "projects.html",
+        projects=records,
+    )
+
+
+# =========================================================
+# SERVICES
+# =========================================================
+
+@admin.route("/services")
+@permission_required("services", "view")
+def services():
+    return module_page(
+        "Services",
+        "Manage website services."
+    )
+# =========================================================
+# TESTIMONIALS
+# =========================================================
+
+@admin.route("/testimonials")
+@permission_required("testimonials", "view")
+def testimonials():
+    return module_page(
+        "Testimonials",
+        "Manage website testimonials."
+    )
+# =========================================================
+# LEADS
+# =========================================================
+
+@admin.route("/leads")
+@permission_required("leads", "view")
+def leads():
+
+    records = Lead.query.order_by(
+        Lead.id.desc()
+    ).all()
+
+    return render_template(
+        "admin/leads.html",
+        leads=records,
+    )
+
+
+# =========================================================
+# PROJECT TRACKER
+# =========================================================
+
+@admin.route("/project-tracker")
+@permission_required("project_tracker", "view")
+def project_tracker():
+
+    records = Project.query.order_by(
+        Project.id.desc()
+    ).all()
+
+    return render_template(
+        "admin/project_tracker.html",
+        projects=records,
+    )
+
+
+# =========================================================
+# MEDIA
+# =========================================================
+
+@admin.route("/media")
+@permission_required("media", "view")
+def media():
+
+    records = Media.query.order_by(
+        Media.id.desc()
+    ).all()
+
+    return render_template(
+        "admin/media.html",
+        media=records,
+    )
+
+
+# =========================================================
+# CONTACTS
+# =========================================================
+
+@admin.route("/contacts")
+@permission_required("contacts", "view")
+def contacts():
+
+    records = ContactMessage.query.order_by(
+        ContactMessage.id.desc()
+    ).all()
+
+    return render_template(
+        "admin/contacts.html",
+        messages=records,
+        contacts=records,
+    )
+
+
+# =========================================================
+# SEO SETTINGS
+# =========================================================
+
+@admin.route("/seo", methods=["GET", "POST"])
+@permission_required("seo", "view")
+def seo():
+
+    if request.method == "POST":
+        if not can_access(current_user, "seo", "edit"):
+            abort(403)
+
+        flash(
+            "SEO settings form submitted. Connect your existing SEO model fields to save changes.",
+            "info",
+        )
+
+        return redirect(url_for("admin.seo"))
+
+    return module_page("SEO Settings", "Manage your website SEO settings.")
+
+
+# =========================================================
+# DATABASE BACKUPS
+# =========================================================
+
+@admin.route("/backups")
+@permission_required("backups", "view")
+def backups():
+
+    return redirect(url_for("backups.index"))
+
+
+# =========================================================
+# USER MANAGEMENT
+# =========================================================
+
+@admin.route("/users")
+@user_management_required
+def users():
+
+    records = User.query.order_by(
+        User.id.desc()
+    ).all()
+
+    return render_template(
+        "users.html",
+        users=records,
+        departments=DEPARTMENTS,
+        modules=ADMIN_DELEGABLE_MODULES,
+        actions=ACTIONS,
+    )
+
+
+@admin.route("/users/create", methods=["GET", "POST"])
+@user_management_required
+def create_user():
+
+    if request.method == "POST":
+
+        username = request.form.get("username", "").strip()
+        email = request.form.get("email", "").strip()
+        password = request.form.get("password", "")
+        role = request.form.get("role", "staff").strip()
+        department = request.form.get("department", "").strip()
+        job_title = request.form.get("job_title", "").strip()
+
+        if not username or not email or not password:
+            flash("Username, email and password are required.", "error")
+            return redirect(url_for("admin.create_user"))
+
+        if role not in ["super_admin", "admin", "staff"]:
+            flash("Invalid user role.", "error")
+            return redirect(url_for("admin.create_user"))
+
+        if role == "super_admin":
+            flash("Creating another Super Admin is not available here.", "error")
+            return redirect(url_for("admin.create_user"))
+
+        if User.query.filter_by(email=email).first():
+            flash("Email address already exists.", "error")
+            return redirect(url_for("admin.create_user"))
+
+        if User.query.filter_by(username=username).first():
+            flash("Username already exists.", "error")
+            return redirect(url_for("admin.create_user"))
+
+        if not valid_department_and_job(department, job_title):
+            flash("Select a valid department and enter a job title.", "error")
+            return redirect(url_for("admin.create_user"))
+
+        if len(password) < 12:
+            flash("Password must contain at least 12 characters.", "error")
+            return redirect(url_for("admin.create_user"))
+
+        user = User(
+            username=username,
+            email=email,
+            role=role,
+            department=department,
+            job_title=job_title,
+        )
+
+        user.set_password(password)
+
+        if role == "admin":
+            user.permissions = read_permissions_from_form()
+        else:
+            user.permissions = {}
+
+        db.session.add(user)
+        db.session.commit()
+
+        flash("User created successfully.", "success")
+        return redirect(url_for("admin.users"))
+
+    return render_template(
+        "admin/create_user.html",
+        departments=DEPARTMENTS,
+        modules=ADMIN_DELEGABLE_MODULES,
+        actions=ACTIONS,
+    )
+
+
+@admin.route("/users/<int:user_id>/edit", methods=["GET", "POST"])
+@user_management_required
+def edit_user(user_id):
+
+    user = User.query.get_or_404(user_id)
+
+    if user.id == current_user.id:
+        flash("You cannot edit your own account here.", "error")
+        return redirect(url_for("admin.users"))
+
+    if request.method == "POST":
+
+        user.username = request.form.get(
+            "username", user.username
+        ).strip()
+
+        user.email = request.form.get(
+            "email", user.email
+        ).strip()
+
+        department = request.form.get(
+            "department", ""
+        ).strip()
+
+        job_title = request.form.get(
+            "job_title", ""
+        ).strip()
+
+        role = request.form.get(
+            "role", user.role
+        ).strip()
+
+        if role not in ["admin", "staff"]:
+            flash("Invalid role.", "error")
+            return redirect(url_for("admin.edit_user", user_id=user.id))
+
+        if not valid_department_and_job(department, job_title):
+            flash("Invalid department or job title.", "error")
+            return redirect(url_for("admin.edit_user", user_id=user.id))
+
+        user.role = role
+        user.department = department
+        user.job_title = job_title
+
+        if role == "admin":
+            user.permissions = read_permissions_from_form()
+        else:
+            user.permissions = {}
+
+        new_password = request.form.get("password", "")
+
+        if new_password:
+            if len(new_password) < 12:
+                flash("Password must contain at least 12 characters.", "error")
+                return redirect(url_for("admin.edit_user", user_id=user.id))
+
+            user.set_password(new_password)
+
+        db.session.commit()
+
+        flash("User updated successfully.", "success")
+        return redirect(url_for("admin.users"))
+
+    return render_template(
+        "edit_user.html",
+        user=user,
+        departments=DEPARTMENTS,
+        modules=ADMIN_DELEGABLE_MODULES,
+        actions=ACTIONS,
+    )
+
+
+@admin.route("/users/<int:user_id>/toggle-status", methods=["POST"])
+@user_management_required
+def toggle_user_status(user_id):
+
+    user = User.query.get_or_404(user_id)
+
+    if user.id == current_user.id:
+        flash("You cannot deactivate your own account.", "error")
+        return redirect(url_for("admin.users"))
+
+    if not hasattr(user, "is_active"):
+        flash("This User model does not support account status changes.", "error")
+        return redirect(url_for("admin.users"))
+
+    user.is_active = not user.is_active
+    db.session.commit()
+
+    flash("User status updated.", "success")
+    return redirect(url_for("admin.users"))
+
+
+
+
+# Compatibility route for existing templates
+@admin.route('/media-library')
+@permission_required('media', 'view')
+def media_library():
+    return redirect(url_for('admin.media'))
+
+# Compatibility route for existing Contact Hub links
+@admin.route("/contact-hub")
+@permission_required("contacts", "view")
+def contact_hub():
+    return redirect(url_for("admin.contacts"))
+
+
+# Compatibility route for existing SEO Settings links
+@admin.route("/seo-settings")
+@permission_required("seo", "view")
+def seo_settings():
+    return redirect(url_for("admin.seo"))
+
+
+
+

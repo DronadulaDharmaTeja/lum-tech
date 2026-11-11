@@ -56,6 +56,20 @@
             color: white;
         }
 
+        .sidebar .section-label {
+            color: #8292a8;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 22px 14px 8px;
+        }
+
+        .sidebar .extraction-link {
+            border: 1px solid #40536d;
+            background: #1c3049;
+        }
+
         .main {
             margin-left: 245px;
             padding: 30px;
@@ -120,28 +134,88 @@
 <body>
 
 {% if current_user.is_authenticated %}
+
 <aside class="sidebar">
+
     <div class="brand">LUM <span>TEK</span></div>
 
-    <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
-    <a href="{{ url_for('admin.projects') }}">Projects</a>
-    <a href="{{ url_for('admin.services') }}">Services</a>
-    <a href="{{ url_for('admin.testimonials') }}">Testimonials</a>
-    <a href="{{ url_for('admin.leads') }}">Quote Requests</a>
-    <a href="{{ url_for('admin.project_tracker') }}">Project Tracker</a>
-    <a href="{{ url_for('admin.media_library') }}">Media Library</a>
-    <a href="{{ url_for('admin.contact_hub') }}">Contact Hub</a>
-    <a href="{{ url_for('admin.seo_settings') }}">SEO Settings</a>
-    <a href="{{ url_for('admin.backups') }}">Backups</a>
+    <div class="section-label">Main</div>
 
-    {% if current_user.role == "admin" %}
-    <a href="{{ url_for('admin.users') }}">User Management</a>
+    <a href="{{ url_for('admin.dashboard') }}">
+        Dashboard
+    </a>
+
+    <a href="{{ url_for('admin.projects') }}">
+        Projects
+    </a>
+
+    <a href="{{ url_for('admin.services') }}">
+        Services
+    </a>
+
+    <a href="{{ url_for('admin.testimonials') }}">
+        Testimonials
+    </a>
+
+    <div class="section-label">Business Management</div>
+
+    <a href="{{ url_for('admin.leads') }}">
+        Quote Requests
+    </a>
+
+    <a href="{{ url_for('admin.project_tracker') }}">
+        Project Tracker
+    </a>
+
+    <a href="{{ url_for('admin.media_library') }}">
+        Media Library
+    </a>
+
+    <a href="{{ url_for('admin.contact_hub') }}">
+        Contact Hub
+    </a>
+
+    <div class="section-label">System Management</div>
+
+    <a href="{{ url_for('admin.seo_settings') }}">
+        SEO Settings
+    </a>
+
+    <a href="{{ url_for('admin.backups') }}">
+        Backups
+    </a>
+
+    {% if current_user.role in ["super_admin", "admin"] %}
+
+    <a href="{{ url_for('admin.users') }}">
+        User Management
+    </a>
+
+    <a class="extraction-link"
+       href="{{ url_for('extraction.index') }}">
+        Data Extraction
+    </a>
+
     {% endif %}
+
 </aside>
+
 {% endif %}
 
 <main class="main">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="card" style="margin-bottom: 15px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
     {% block content %}{% endblock %}
+
 </main>
 
 </body>

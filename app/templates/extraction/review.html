@@ -1,0 +1,193 @@
+
+{% extends "base.html" %}
+
+{% block title %}Review Extraction | LUM TEK{% endblock %}
+
+{% block content %}
+
+<style>
+    .review-header {
+        margin-bottom: 25px;
+    }
+
+    .review-card {
+        background: white;
+        padding: 22px;
+        margin-bottom: 20px;
+        border-radius: 12px;
+        box-shadow: 0 3px 15px rgba(0,0,0,.04);
+    }
+
+    .review-card textarea {
+        width: 100%;
+        min-height: 180px;
+        padding: 14px;
+        border: 1px solid #d7deea;
+        border-radius: 8px;
+        font-family: Consolas, monospace;
+        font-size: 13px;
+        resize: vertical;
+    }
+
+    .btn {
+        border: 0;
+        padding: 11px 17px;
+        border-radius: 7px;
+        cursor: pointer;
+        font-weight: 600;
+        margin: 8px 8px 0 0;
+    }
+
+    .save-btn {
+        background: #2563eb;
+        color: white;
+    }
+
+    .approve-btn {
+        background: #15803d;
+        color: white;
+    }
+
+    .reject-btn {
+        background: #dc2626;
+        color: white;
+    }
+
+    .muted {
+        color: #718096;
+    }
+
+    .status {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: capitalize;
+    }
+
+    .pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .approved {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .rejected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+</style>
+
+<div class="review-header">
+    <h1>Review Extraction</h1>
+
+    <p class="muted">
+        Job: {{ job.filename }}
+    </p>
+
+    <p class="muted">
+        Source: {{ job.source_type }} |
+        Type: {{ job.file_type }} |
+        Status: {{ job.status }}
+    </p>
+
+    <a href="{{ url_for('extraction.index') }}">
+        ← Back to Data Extraction
+    </a>
+</div>
+
+{% if job.error_message %}
+<div class="review-card">
+    <h3>Extraction Error</h3>
+    <p>{{ job.error_message }}</p>
+</div>
+{% endif %}
+
+{% for record in records %}
+
+<div class="review-card">
+
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+
+        <h3>Record #{{ record.id }}</h3>
+
+        <span class="status {{ record.review_status }}">
+            {{ record.review_status }}
+        </span>
+
+    </div>
+
+    <form method="POST"
+          action="{{ url_for('extraction.edit_record', record_id=record.id) }}">
+
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <label for="data-{{ record.id }}">
+            Extracted Data (JSON)
+        </label>
+
+        <textarea
+            id="data-{{ record.id }}"
+            name="extracted_data"
+            required>{{ record.extracted_data | tojson(indent=2) }}</textarea>
+
+        <br>
+
+        <button type="submit" class="btn save-btn">
+            Save Changes
+        </button>
+
+    </form>
+
+    {% if record.review_status == "pending" %}
+
+    <form method="POST"
+          action="{{ url_for('extraction.approve_record', record_id=record.id) }}"
+          style="display:inline;">
+
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <button type="submit" class="btn approve-btn">
+            Approve
+        </button>
+
+    </form>
+
+    <form method="POST"
+          action="{{ url_for('extraction.reject_record', record_id=record.id) }}"
+          style="display:inline;">
+
+        <input type="hidden"
+               name="csrf_token"
+               value="{{ csrf_token() }}">
+
+        <button type="submit" class="btn reject-btn">
+            Reject
+        </button>
+
+    </form>
+
+    {% endif %}
+
+</div>
+
+{% else %}
+
+<div class="review-card">
+    <h3>No records available</h3>
+    <p class="muted">
+        This extraction job does not contain any records.
+    </p>
+</div>
+
+{% endfor %}
+
+{% endblock %}

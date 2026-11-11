@@ -1,0 +1,378 @@
+
+{% extends "base.html" %}
+
+{% block title %}Database Backups | LUM TEK{% endblock %}
+
+{% block content %}
+
+<style>
+.backup-container {
+    padding: 25px;
+}
+
+.backup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.backup-header h1 {
+    font-size: 28px;
+    color: #1e293b;
+}
+
+.backup-header p {
+    color: #64748b;
+    margin-top: 6px;
+}
+
+.backup-card {
+    background: white;
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.backup-create {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.backup-create h2,
+.backup-card h2 {
+    color: #1e293b;
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.backup-create p {
+    color: #64748b;
+}
+
+.btn-backup {
+    background: #2563eb;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.btn-backup:hover {
+    background: #1d4ed8;
+}
+
+.backup-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 18px;
+}
+
+.backup-table th,
+.backup-table td {
+    padding: 15px 12px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.backup-table th {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 13px;
+}
+
+.backup-table td {
+    color: #334155;
+    font-size: 14px;
+}
+
+.status-success {
+    background: #dcfce7;
+    color: #15803d;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-missing {
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.btn-download {
+    display: inline-block;
+    background: #0f172a;
+    color: white;
+    padding: 8px 13px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.btn-download:hover {
+    background: #334155;
+}
+
+.empty-backups {
+    text-align: center;
+    padding: 40px 15px;
+    color: #64748b;
+}
+
+.alert {
+    padding: 13px 16px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+
+.alert-success {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+@media(max-width: 700px) {
+    .backup-container {
+        padding: 12px;
+    }
+
+    .backup-table {
+        min-width: 650px;
+    }
+
+    .table-wrapper {
+        overflow-x: auto;
+    }
+}
+</style>
+
+<div class="backup-container">
+
+    <!-- HEADER -->
+
+    <div class="backup-header">
+
+        <div>
+            <h1>Database Backups</h1>
+            <p>
+                Create and manage your LUM TEK MySQL database backups.
+            </p>
+        </div>
+
+    </div>
+
+
+    <!-- FLASH MESSAGES -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% for category, message in messages %}
+
+            <div class="alert
+                {% if category == 'success' %}
+                    alert-success
+                {% else %}
+                    alert-error
+                {% endif %}">
+
+                {{ message }}
+
+            </div>
+
+        {% endfor %}
+
+    {% endwith %}
+
+
+    <!-- CREATE BACKUP -->
+
+    <div class="backup-card">
+
+        <div class="backup-create">
+
+            <div>
+
+                <h2>Create New Backup</h2>
+
+                <p>
+                    Generate a SQL backup of your LUM TEK database.
+                </p>
+
+            </div>
+
+            <form
+                method="POST"
+                action="{{ url_for('backups.create_backup') }}"
+                onsubmit="return confirm('Create a new database backup now?');">
+
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}">
+
+                <button
+                    type="submit"
+                    class="btn-backup">
+
+                    + Create Backup
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- BACKUP HISTORY -->
+
+    <div class="backup-card">
+
+        <h2>Backup History</h2>
+
+        <p style="color:#64748b;">
+            View and download your previously generated backups.
+        </p>
+
+        {% if backups %}
+
+            <div class="table-wrapper">
+
+                <table class="backup-table">
+
+                    <thead>
+
+                        <tr>
+                            <th>ID</th>
+                            <th>Backup Filename</th>
+                            <th>Created Date</th>
+                            <th>File Size</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        {% for item in backups %}
+
+                            <tr>
+
+                                <td>
+                                    {{ item.record.id }}
+                                </td>
+
+                                <td>
+                                    {{ item.record.filename }}
+                                </td>
+
+                                <td>
+                                    {% if item.record.created_at %}
+                                        {{ item.record.created_at.strftime('%d-%m-%Y %H:%M') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if item.file_exists %}
+
+                                        {% if item.file_size >= 1048576 %}
+                                            {{ "%.2f"|format(item.file_size / 1048576) }} MB
+                                        {% else %}
+                                            {{ "%.2f"|format(item.file_size / 1024) }} KB
+                                        {% endif %}
+
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+
+                                <td>
+
+                                    {% if item.file_exists %}
+
+                                        <span class="status-success">
+                                            Available
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="status-missing">
+                                            Missing
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                                <td>
+
+                                    {% if item.file_exists %}
+
+                                        <a
+                                            class="btn-download"
+                                            href="{{ url_for('backups.download_backup_file', backup_id=item.record.id) }}">
+
+                                            Download
+
+                                        </a>
+
+                                    {% else %}
+
+                                        <span style="color:#94a3b8;">
+                                            Unavailable
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-backups">
+
+                <h3>No Backups Available</h3>
+
+                <p>
+                    Create your first database backup to see it here.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+{% endblock %}

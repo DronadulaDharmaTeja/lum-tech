@@ -1,8 +1,6 @@
-Flask==3.1.2
-Flask-SQLAlchemy==3.1.1
-Flask-Login==0.6.3
-Flask-WTF==1.2.2
-PyMySQL==1.1.2
-python-dotenv==1.2.1
-email-validator==2.3.0
+Flask
+Flask-SQLAlchemy
+Flask-Login
+Flask-WTF
+PyMySQL
 gunicorn

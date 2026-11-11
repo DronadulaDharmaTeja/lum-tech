@@ -1,0 +1,356 @@
+
+{% extends "base.html" %}
+
+{% block title %}Data Extraction | LUM TEK{% endblock %}
+
+{% block content %}
+
+<style>
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+
+    .page-header h1 {
+        margin: 0 0 8px;
+        font-size: 27px;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        gap: 18px;
+        margin-bottom: 25px;
+    }
+
+    .stat-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 3px 15px rgba(0,0,0,.04);
+    }
+
+    .stat-card h3 {
+        margin: 0;
+        font-size: 14px;
+        color: #718096;
+    }
+
+    .stat-card p {
+        font-size: 30px;
+        font-weight: bold;
+        margin: 12px 0 0;
+    }
+
+    .extract-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 25px;
+    }
+
+    .panel {
+        background: white;
+        padding: 23px;
+        border-radius: 12px;
+        box-shadow: 0 3px 15px rgba(0,0,0,.04);
+    }
+
+    .panel h2 {
+        font-size: 19px;
+        margin: 0 0 10px;
+    }
+
+    .panel p {
+        color: #718096;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
+    .field {
+        margin: 18px 0;
+    }
+
+    .field label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+
+    .field input,
+    .field select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #d7deea;
+        border-radius: 7px;
+        background: white;
+    }
+
+    .primary-btn {
+        background: #142033;
+        color: white;
+        border: 0;
+        border-radius: 7px;
+        padding: 12px 18px;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .primary-btn:hover {
+        background: #263850;
+    }
+
+    .export-links {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 15px;
+    }
+
+    .export-links a {
+        display: inline-block;
+        padding: 10px 15px;
+        border-radius: 7px;
+        background: #e8eef7;
+        color: #142033;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 650px;
+    }
+
+    th, td {
+        padding: 14px;
+        border-bottom: 1px solid #edf0f5;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    th {
+        color: #718096;
+        background: #f8fafc;
+    }
+
+    .status {
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: capitalize;
+    }
+
+    .pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .completed {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .failed {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .review-link {
+        color: #2563eb;
+        font-weight: 600;
+        text-decoration: none;
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1>Data Extraction Center</h1>
+        <p class="muted">
+            Upload documents, extract records, review and approve data.
+        </p>
+    </div>
+</div>
+
+<div class="stats-grid">
+
+    <div class="stat-card">
+        <h3>Total Extraction Jobs</h3>
+        <p>{{ jobs|length }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Pending Review</h3>
+        <p>{{ pending_count }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Approved Records</h3>
+        <p>{{ approved_count }}</p>
+    </div>
+
+    <div class="stat-card">
+        <h3>Rejected Records</h3>
+        <p>{{ rejected_count }}</p>
+    </div>
+
+</div>
+
+<div class="extract-grid">
+
+    <section class="panel">
+        <h2>Document Extraction</h2>
+        <p>
+            Upload PDF, Word, Excel, CSV or image files to extract information.
+        </p>
+
+        <form method="POST"
+              action="{{ url_for('extraction.upload') }}"
+              enctype="multipart/form-data">
+
+            <input type="hidden" name="csrf_token"
+                   value="{{ csrf_token() }}">
+
+            <div class="field">
+                <label for="file">Select a document</label>
+                <input type="file"
+                       id="file"
+                       name="file"
+                       accept=".pdf,.docx,.xlsx,.csv,.png,.jpg,.jpeg"
+                       required>
+            </div>
+
+            <button type="submit" class="primary-btn">
+                Upload and Extract
+            </button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2>MySQL Database Extraction</h2>
+        <p>
+            Select an existing business table and stage its records for review.
+        </p>
+
+        <form method="POST"
+              action="{{ url_for('extraction.extract_database') }}">
+
+            <input type="hidden" name="csrf_token"
+                   value="{{ csrf_token() }}">
+
+            <div class="field">
+                <label for="source">Select data source</label>
+
+                <select name="source" id="source" required>
+                    <option value="">Choose a source</option>
+
+                    {% for source in sources %}
+                    <option value="{{ source }}">
+                        {{ source.replace('_', ' ').title() }}
+                    </option>
+                    {% endfor %}
+
+                </select>
+            </div>
+
+            <button type="submit" class="primary-btn">
+                Extract Database Records
+            </button>
+        </form>
+    </section>
+
+</div>
+
+<section class="panel" style="margin-bottom:25px;">
+    <h2>Export Approved Records</h2>
+
+    <p>
+        Download records that have passed the review and approval process.
+    </p>
+
+    <div class="export-links">
+        <a href="{{ url_for('extraction.export_csv', status='approved') }}">
+            Export CSV
+        </a>
+
+        <a href="{{ url_for('extraction.export_excel', status='approved') }}">
+            Export Excel
+        </a>
+    </div>
+</section>
+
+<section class="panel">
+
+    <h2>Extraction History</h2>
+    <p>Review your previously uploaded files and extraction jobs.</p>
+
+    <div class="table-wrap">
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Source</th>
+                    <th>File Type</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for job in jobs %}
+
+                <tr>
+                    <td>{{ job.filename }}</td>
+                    <td>{{ job.source_type }}</td>
+                    <td>{{ job.file_type }}</td>
+
+                    <td>
+                        <span class="status {{ job.status }}">
+                            {{ job.status }}
+                        </span>
+                    </td>
+
+                    <td>
+                        {{ job.created_at.strftime('%d-%m-%Y %I:%M %p') }}
+                    </td>
+
+                    <td>
+                        <a class="review-link"
+                           href="{{ url_for('extraction.review', job_id=job.id) }}">
+                            Review Records
+                        </a>
+                    </td>
+                </tr>
+
+                {% else %}
+
+                <tr>
+                    <td colspan="6" style="text-align:center;color:#718096;">
+                        No extraction jobs found. Upload a document to begin.
+                    </td>
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+        </table>
+
+    </div>
+
+</section>
+
+{% endblock %}
